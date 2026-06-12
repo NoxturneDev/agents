@@ -4,18 +4,34 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"antigravity/client"
 	"antigravity/daemon"
 )
 
 func main() {
-	if len(os.Args) < 2 {
+	planName, args := extractPlanFlag()
+
+	if planName != "" {
+		workspaceRoot, err := client.FindWorkspaceRoot()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error finding workspace root: %v\n", err)
+			os.Exit(1)
+		}
+		planPath := filepath.Join(workspaceRoot, ".agents", "plan", "active", planName)
+		if info, err := os.Stat(planPath); err != nil || info.IsDir() {
+			fmt.Fprintf(os.Stderr, "Fatal: plan file %s does not exist inside .agents/plan/active/\n", planName)
+			os.Exit(1)
+		}
+	}
+
+	if len(args) < 2 {
 		printUsage()
 		os.Exit(1)
 	}
 
-	subcommand := os.Args[1]
+	subcommand := args[1]
 	switch subcommand {
 	case "daemon":
 		workspaceRoot, err := client.FindWorkspaceRoot()
@@ -45,12 +61,12 @@ func main() {
 		}
 
 	case "write":
-		if len(os.Args) < 4 {
+		if len(args) < 4 {
 			fmt.Println("Usage: antigravity-cli write <file_path> <content>")
 			os.Exit(1)
 		}
-		filePath := os.Args[2]
-		content := os.Args[3]
+		filePath := args[2]
+		content := args[3]
 
 		if err := client.WriteFileWithLock(filePath, []byte(content)); err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to write with lock: %v\n", err)
@@ -62,6 +78,19 @@ func main() {
 		printUsage()
 		os.Exit(1)
 	}
+}
+
+func extractPlanFlag() (string, []string) {
+	var planName string
+	var cleanArgs []string
+	for _, arg := range os.Args {
+		if strings.HasPrefix(arg, "--plan=") {
+			planName = strings.TrimPrefix(arg, "--plan=")
+		} else {
+			cleanArgs = append(cleanArgs, arg)
+		}
+	}
+	return planName, cleanArgs
 }
 
 func printUsage() {
