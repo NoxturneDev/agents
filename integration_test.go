@@ -211,8 +211,8 @@ func TestIntegration_GlobalLockEscalation(t *testing.T) {
 
 	defer cleanupDaemon(t, root)
 
-	// Write to contribution-logs.md with lock, which should elevate to GLOBAL_WORKSPACE lock
-	logFile := filepath.Join(root, ".agents", "logs", "contribution-logs.md")
+	// Write to test-contribution-logs.md with lock, which should elevate to GLOBAL_WORKSPACE lock
+	logFile := filepath.Join(root, ".agents", "logs", "test-contribution-logs.md")
 	defer os.Remove(logFile)
 
 	err = client.WriteFileWithLock(logFile, []byte("routine log entry"))
