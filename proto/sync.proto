@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package sync;
+
+option go_package = "./pb";
+
+service LockManager {
+  // Health check to verify the daemon is alive
+  rpc Ping (PingRequest) returns (PingResponse);
+  
+  // Attempt to claim a resource
+  rpc AcquireLock (LockRequest) returns (LockResponse);
+  
+  // Release a claimed resource
+  rpc ReleaseLock (LockRequest) returns (LockResponse);
+}
+
+message PingRequest {}
+
+message PingResponse {
+  string status = 1; // "ALIVE"
+}
+
+message LockRequest {
+  string resource_id = 1; // e.g., "plan/active_plan.md"
+  string agent_id = 2;    // UUID or PID of the CLI requesting the lock
+}
+
+message LockResponse {
+  bool granted = 1;
+  string message = 2; // e.g., "LOCKED_BY_AGENT_X" if granted == false
+}
