@@ -37,3 +37,17 @@ func FindWorkspaceRoot() (string, error) {
 
 	return cwd, nil
 }
+
+// GetActivePlanPath returns the absolute path to a plan file. If planName is specified,
+// it resolves to the `.agents/plan/active/{planName}` directory. Otherwise, it falls back
+// to the legacy `.agents/plan/active_plan.md` file path.
+func GetActivePlanPath(planName string) (string, error) {
+	root, err := FindWorkspaceRoot()
+	if err != nil {
+		return "", err
+	}
+	if planName == "" {
+		return filepath.Join(root, ".agents", "plan", "active_plan.md"), nil
+	}
+	return filepath.Join(root, ".agents", "plan", "active", planName), nil
+}
