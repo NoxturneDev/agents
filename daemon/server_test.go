@@ -104,3 +104,51 @@ func TestLockServer_TTLExpiration(t *testing.T) {
 		t.Errorf("expected message LOCKED, got: %s", resp.Message)
 	}
 }
+
+func TestLockServer_ParallelIndependentLocking(t *testing.T) {
+	server := NewLockServer()
+
+	// 1. Agent 1 acquires Lock X
+	respX, err := server.AcquireLock(context.Background(), &pb.LockRequest{
+		ResourceId: "resource_X.md",
+		AgentId:    "agent-1",
+	})
+	if err != nil || !respX.Granted {
+		t.Fatalf("failed to acquire Lock X: %v, resp: %v", err, respX)
+	}
+
+	// 2. Agent 2 acquires Lock Y concurrently (should succeed since resource IDs differ)
+	respY, err := server.AcquireLock(context.Background(), &pb.LockRequest{
+		ResourceId: "resource_Y.md",
+		AgentId:    "agent-2",
+	})
+	if err != nil || !respY.Granted {
+		t.Fatalf("failed to acquire Lock Y: %v, resp: %v", err, respY)
+	}
+
+	// 3. Double-check that Lock X is still held by Agent 1 (cannot be acquired by Agent 2)
+	respX2, err := server.AcquireLock(context.Background(), &pb.LockRequest{
+		ResourceId: "resource_X.md",
+		AgentId:    "agent-2",
+	})
+	if err != nil || respX2.Granted {
+		t.Fatalf("expected Lock X to be blocked, got: %v", respX2)
+	}
+
+	// 4. Release both
+	releaseX, err := server.ReleaseLock(context.Background(), &pb.LockRequest{
+		ResourceId: "resource_X.md",
+		AgentId:    "agent-1",
+	})
+	if err != nil || !releaseX.Granted {
+		t.Fatalf("failed to release Lock X: %v", err)
+	}
+
+	releaseY, err := server.ReleaseLock(context.Background(), &pb.LockRequest{
+		ResourceId: "resource_Y.md",
+		AgentId:    "agent-2",
+	})
+	if err != nil || !releaseY.Granted {
+		t.Fatalf("failed to release Lock Y: %v", err)
+	}
+}
