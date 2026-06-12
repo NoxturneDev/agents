@@ -1,0 +1,73 @@
+package main
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+
+	"antigravity/client"
+	"antigravity/daemon"
+)
+
+func main() {
+	if len(os.Args) < 2 {
+		printUsage()
+		os.Exit(1)
+	}
+
+	subcommand := os.Args[1]
+	switch subcommand {
+	case "daemon":
+		workspaceRoot, err := client.FindWorkspaceRoot()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error finding workspace root: %v\n", err)
+			os.Exit(1)
+		}
+		socketPath := filepath.Join(workspaceRoot, ".agents", "antigravity.sock")
+		fmt.Printf("Starting lock daemon on Unix Domain Socket: %s\n", socketPath)
+		if err := daemon.Run(socketPath); err != nil {
+			fmt.Fprintf(os.Stderr, "Daemon error: %v\n", err)
+			os.Exit(1)
+		}
+
+	case "ping":
+		workspaceRoot, err := client.FindWorkspaceRoot()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error finding workspace root: %v\n", err)
+			os.Exit(1)
+		}
+		socketPath := filepath.Join(workspaceRoot, ".agents", "antigravity.sock")
+		if client.CheckDaemonHealth(socketPath) {
+			fmt.Println("Daemon status: ALIVE")
+		} else {
+			fmt.Println("Daemon status: DEAD/UNREACHABLE")
+			os.Exit(1)
+		}
+
+	case "write":
+		if len(os.Args) < 4 {
+			fmt.Println("Usage: antigravity-cli write <file_path> <content>")
+			os.Exit(1)
+		}
+		filePath := os.Args[2]
+		content := os.Args[3]
+
+		if err := client.WriteFileWithLock(filePath, []byte(content)); err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to write with lock: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Printf("Successfully wrote to %s under exclusive lock.\n", filePath)
+
+	default:
+		printUsage()
+		os.Exit(1)
+	}
+}
+
+func printUsage() {
+	fmt.Println("Antigravity UDS Lock Daemon CLI")
+	fmt.Println("Usage:")
+	fmt.Println("  antigravity-cli daemon                  - Run the gRPC lock daemon server")
+	fmt.Println("  antigravity-cli ping                    - Query lock daemon health status")
+	fmt.Println("  antigravity-cli write <file> <content>  - Write file safely using lock manager client")
+}
