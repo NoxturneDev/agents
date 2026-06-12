@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -152,5 +153,70 @@ func TestIntegration_WriteFileWithLock(t *testing.T) {
 	}
 	if string(written) != string(content) {
 		t.Errorf("expected '%s', got '%s'", content, written)
+	}
+}
+
+func TestIntegration_GetActivePlanPath(t *testing.T) {
+	root, err := client.FindWorkspaceRoot()
+	if err != nil {
+		t.Fatalf("FindWorkspaceRoot failed: %v", err)
+	}
+
+	// 1. Legacy/default plan path
+	legacyPath, err := client.GetActivePlanPath("")
+	if err != nil {
+		t.Fatalf("GetActivePlanPath empty failed: %v", err)
+	}
+	expectedLegacy := filepath.Join(root, ".agents", "plan", "active_plan.md")
+	if legacyPath != expectedLegacy {
+		t.Errorf("expected legacy path '%s', got '%s'", expectedLegacy, legacyPath)
+	}
+
+	// 2. Target plan path in active directory
+	targetPath, err := client.GetActivePlanPath("epic_auth.md")
+	if err != nil {
+		t.Fatalf("GetActivePlanPath failed: %v", err)
+	}
+	expectedTarget := filepath.Join(root, ".agents", "plan", "active", "epic_auth.md")
+	if targetPath != expectedTarget {
+		t.Errorf("expected target path '%s', got '%s'", expectedTarget, targetPath)
+	}
+}
+
+func TestIntegration_RunGitCommandWithLock(t *testing.T) {
+	root, err := client.FindWorkspaceRoot()
+	if err != nil {
+		t.Fatalf("FindWorkspaceRoot failed: %v", err)
+	}
+
+	defer cleanupDaemon(t, root)
+
+	// Run status using git lock wrapper
+	output, err := client.RunGitCommandWithLock(root, "status")
+	if err != nil {
+		t.Fatalf("RunGitCommandWithLock failed: %v (output: %s)", err, output)
+	}
+
+	// Verify it contains branch information or standard git status output
+	if !strings.Contains(output, "branch") && !strings.Contains(output, "Branch") && !strings.Contains(output, "On branch") {
+		t.Errorf("unexpected git output: %s", output)
+	}
+}
+
+func TestIntegration_GlobalLockEscalation(t *testing.T) {
+	root, err := client.FindWorkspaceRoot()
+	if err != nil {
+		t.Fatalf("FindWorkspaceRoot failed: %v", err)
+	}
+
+	defer cleanupDaemon(t, root)
+
+	// Write to contribution-logs.md with lock, which should elevate to GLOBAL_WORKSPACE lock
+	logFile := filepath.Join(root, ".agents", "logs", "contribution-logs.md")
+	defer os.Remove(logFile)
+
+	err = client.WriteFileWithLock(logFile, []byte("routine log entry"))
+	if err != nil {
+		t.Fatalf("WriteFileWithLock on log failed: %v", err)
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"antigravity/pb"
@@ -28,6 +29,12 @@ func WriteFileWithLock(path string, data []byte) error {
 		relPath = absPath
 	}
 
+	// Elevate lock to GLOBAL_WORKSPACE if modifying contribution logs
+	lockResource := relPath
+	if strings.Contains(relPath, "contribution-logs.md") {
+		lockResource = "GLOBAL_WORKSPACE"
+	}
+
 	// Bootstrap daemon and get client
 	c, conn, err := ConnectAndBootstrap()
 	if err != nil {
@@ -47,7 +54,7 @@ func WriteFileWithLock(path string, data []byte) error {
 
 	for i := 0; i < retries; i++ {
 		acquireResp, err = c.AcquireLock(ctx, &pb.LockRequest{
-			ResourceId: relPath,
+			ResourceId: lockResource,
 			AgentId:    agentID,
 		})
 		if err != nil {
@@ -70,7 +77,7 @@ func WriteFileWithLock(path string, data []byte) error {
 		releaseCtx, releaseCancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer releaseCancel()
 		_, _ = c.ReleaseLock(releaseCtx, &pb.LockRequest{
-			ResourceId: relPath,
+			ResourceId: lockResource,
 			AgentId:    agentID,
 		})
 	}()
