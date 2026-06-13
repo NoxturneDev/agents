@@ -30,10 +30,10 @@ Name: Galih Adhi Kusuma
 
 1. **The Source of Truth (`.agents/plan/`):** This directory tracks implementation designs, context states, and architectural feature steps.
 2. **Directory Architecture:**
-   - `.agents/plan/active_plan.md` -> Always represents the single, current, active feature plan.
-   - `.agents/plan/archive/{date}_plancontext.md` -> Stores completed historical plans for review.
+   - `.agents/plan/active/{plan_context}.md` -> Always represents the single, current, active feature plan.
+   - `.agents/plan/archive/{date}_{plan_context}.md` -> Stores completed historical plans for review.
    - `.agents/logs/contribution-logs.md` -> Master ledger of completed goals and commits.
-3. **Pre-Flight Context Sync:** On session initialization, you MUST immediately read `.agents/plan/active_plan.md` to absorb the full project context before writing code or asking the user for background.
+3. **Pre-Flight Context Sync:** On session initialization, you MUST immediately read `.agents/plan/active/` to absorb the full project context before writing code or asking the user for background.
 4. **Pre-Execution Intent Lock (Anti-Crash):** BEFORE making modifications to any codebase files or initiating a subagent generation block, you MUST update `.agents/plan/active_plan.md`. Log the exact sub-task you are about to initiate and flag it as `[IN PROGRESS - AGENT RUNNING]`. This ensures that if the current engine instance crashes mid-process, a newly spawned successor agent can cleanly read the uncommitted git changes and resume execution without loss of state.
 5. **Plan Structure Requirements:** Every plan file must contain a complete description of the technical goals and a highly specific task checklist. The very first line MUST be a top-level markdown heading (`#`) stating the primary objective.
 6. **Post-Implementation Checklist Update:** After executing steps or wrapping up a task, you must explicitly log what steps were successfully completed, what went wrong, and exactly how bugs were fixed.
