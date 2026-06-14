@@ -109,3 +109,18 @@ When instructed to create or draft a new `.agents/plan/active_plan.md`, you MUST
    - 📝 **README Deltas:** (Bullet points of what will be added/removed in the README).
    - 🧠 **Context Deltas:** (Bullet points of what new domain logic will be injected into GEMINI.md).
    - 🟢 **Execution Confirmation:** (Ask the user: "Shall I write these context updates to disk?")
+
+## 8. CROSS-AGENT INTERCOM COMMUNICATION (OPT-IN)
+
+When instructed by the user to communicate with, ask, or send a message to another agent (e.g., "ask the frontend agent...", "send a query to the agent in ziad-react-template..."):
+1. You MUST use shell command execution (`run_command`) to run the `antigravity-cli send` tool.
+2. The format is:
+   ```bash
+   antigravity-cli send --target=<target_directory_substring> --query="<your query>"
+   ```
+   For example, if target is ziad-react-template:
+   ```bash
+   antigravity-cli send --target=ziad-react-template --query="What is the JSON structure for the login payload?"
+   ```
+3. The target is a substring match of the path where the target agent is running.
+4. Once you call the command, the message will be typed directly into the target agent's terminal input. Since this is an asynchronous cross-agent call, wait for the user to resume you, or check the terminal buffer if needed.

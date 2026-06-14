@@ -8,9 +8,9 @@ import (
 	"strings"
 )
 
-// FindAgentPaneByPath scans active tmux panes for one tagged with @is_agent=1 whose pane_current_path matches target.
+// FindAgentPaneByPath scans active tmux panes for one tagged with @is_agent=1 or running an agent command whose pane_current_path matches target.
 func FindAgentPaneByPath(target string) (string, string, error) {
-	cmd := exec.Command("tmux", "list-panes", "-a", "-F", "#{pane_id}|#{pane_current_path}|#{@is_agent}")
+	cmd := exec.Command("tmux", "list-panes", "-a", "-F", "#{pane_id}|#{pane_current_path}|#{@is_agent}|#{pane_current_command}")
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
@@ -33,14 +33,19 @@ func FindAgentPaneByPath(target string) (string, string, error) {
 			continue
 		}
 		parts := strings.Split(line, "|")
-		if len(parts) < 3 {
+		if len(parts) < 4 {
 			continue
 		}
 		paneID := parts[0]
 		panePath := parts[1]
 		isAgent := parts[2]
+		paneCmd := parts[3]
 
-		if isAgent != "1" {
+		// Filter for agent panes: either tagged with @is_agent=1 or running agent binaries
+		isAgentOpt := isAgent == "1"
+		isAgentCmd := strings.Contains(paneCmd, "agy") || strings.Contains(paneCmd, "gemini") || strings.Contains(paneCmd, "claude")
+
+		if !isAgentOpt && !isAgentCmd {
 			continue
 		}
 

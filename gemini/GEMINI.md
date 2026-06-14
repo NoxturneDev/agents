@@ -10,3 +10,19 @@ GLOBAL CONTEXT
    - **Body/Description Line:** Separate from the header by a blank line. Must use a concise, compact bulleted list (`-` format) detailing the exact technical changes. Avoid fluffy prose.
 
 # WORKSPACE PERSISTENCE & CONTEXT HANDOFF[27;5;106~1. **The Source of Truth (`.agents/plan/`):** This directory tracks implementation designs, context states, and architectural feature steps.[27;5;106~2. **Pre-Flight Context Sync:** On session initialization, you MUST check `.agents/plan/` for any existing feature files, active development plans, or step manifests. Read them to absorb context before writing code or asking the user for background.[27;5;106~3. **Continuous Execution Logging:** As you implement code across files, you must update the corresponding plan file in `.agents/plan/`.[27;5;106~   - Log completed steps.[27;5;106~   - Outline remaining tasks.[27;5;106~   - Document unresolved architecture edge cases.[27;5;106~4. **Handoff Preparedness:** Ensure that if this session terminates, any other AI model opening this repository later can instantly resume the task by reading your markdown states inside `.agents/plan/`
+
+# CROSS-AGENT INTERCOM COMMUNICATION (OPT-IN)
+
+When instructed by the user to communicate with, ask, or send a message to another agent (e.g., "ask the frontend agent...", "send a query to the agent in ziad-react-template..."):
+1. You MUST use shell command execution to run the `antigravity-cli send` tool.
+2. The format is:
+   ```bash
+   antigravity-cli send --target=<target_directory_substring> --query="<your query>"
+   ```
+   For example, if target is ziad-react-template:
+   ```bash
+   antigravity-cli send --target=ziad-react-template --query="What is the JSON structure for the login payload?"
+   ```
+3. The target is a substring match of the path where the target agent is running.
+4. Once you call the command, the message will be typed directly into the target agent's terminal input. Since this is an asynchronous cross-agent call, wait for the user to resume you, or check the terminal buffer if needed.
+
