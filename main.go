@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -108,6 +109,76 @@ func main() {
 
 		fmt.Printf("[INTERCOM] Message delivered to agent at %s (pane %s)\n", panePath, paneID)
 
+	case "list-agents":
+		agents, err := client.ListActiveAgents()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
+
+		bz, err := json.MarshalIndent(agents, "", "  ")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to serialize JSON: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Println(string(bz))
+
+	case "cat-pane":
+		var target string
+		for _, arg := range args[2:] {
+			if strings.HasPrefix(arg, "--target=") {
+				target = strings.TrimPrefix(arg, "--target=")
+			}
+		}
+
+		if target == "" {
+			fmt.Println("Usage: antigravity-cli cat-pane --target=<dir>")
+			os.Exit(1)
+		}
+
+		paneID, _, err := client.FindAgentPaneByPath(target)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
+
+		output, err := client.CaptureAndCleanPane(paneID)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Println(output)
+
+	case "spawn":
+		var agent, dir, layout, session, plan, prompt string
+		for _, arg := range args[2:] {
+			if strings.HasPrefix(arg, "--agent=") {
+				agent = strings.TrimPrefix(arg, "--agent=")
+			} else if strings.HasPrefix(arg, "--dir=") {
+				dir = strings.TrimPrefix(arg, "--dir=")
+			} else if strings.HasPrefix(arg, "--layout=") {
+				layout = strings.TrimPrefix(arg, "--layout=")
+			} else if strings.HasPrefix(arg, "--session=") {
+				session = strings.TrimPrefix(arg, "--session=")
+			} else if strings.HasPrefix(arg, "--plan=") {
+				plan = strings.TrimPrefix(arg, "--plan=")
+			} else if strings.HasPrefix(arg, "--prompt=") {
+				prompt = strings.TrimPrefix(arg, "--prompt=")
+			}
+		}
+
+		if agent == "" || layout == "" || prompt == "" {
+			fmt.Println("Usage: antigravity-cli spawn --agent=<agy-p1/gemini-p1> --layout=<split-h/split-v/window> --prompt=<prompt> [--dir=<dir>] [--session=<session>] [--plan=<plan>]")
+			os.Exit(1)
+		}
+
+		paneID, err := client.SpawnAgentPane(agent, dir, layout, session, plan, prompt)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Printf("[SPAWN] Successfully spawned agent %s (pane %s)\n", agent, paneID)
+
 	default:
 		printUsage()
 		os.Exit(1)
@@ -134,4 +205,7 @@ func printUsage() {
 	fmt.Println("  antigravity-cli ping                    - Query lock daemon health status")
 	fmt.Println("  antigravity-cli write <file> <content>  - Write file safely using lock manager client")
 	fmt.Println("  antigravity-cli send --target=<dir> --query=<question> - Send a message to another agent")
+	fmt.Println("  antigravity-cli list-agents             - List all active agent panes in JSON format")
+	fmt.Println("  antigravity-cli cat-pane --target=<dir>  - Output ANSI-cleaned terminal log of target agent")
+	fmt.Println("  antigravity-cli spawn --agent=<agent> --layout=<split-h/v/window> --prompt=<prompt> ... - Spawn new worker agent")
 }
