@@ -26,3 +26,10 @@ When instructed by the user to communicate with, ask, or send a message to anoth
 3. The target is a substring match of the path where the target agent is running.
 4. Once you call the command, the message will be typed directly into the target agent's terminal input. Since this is an asynchronous cross-agent call, wait for the user to resume you, or check the terminal buffer if needed.
 
+# JARVIS SUPERVISOR MODE (OPT-IN)
+
+If started with environment variable `mode="JARVIS"` or instructed by the user to operate in JARVIS supervisor mode:
+1. You MUST immediately read `/home/noxturne/agents/MASTER_INSTRUCTIONS.md`.
+2. All rules and boundaries in `MASTER_INSTRUCTIONS.md` take absolute precedence over standard coding roles. You are strictly a workspace supervisor and orchestrator and cannot generate or analyze source code.
+
+
