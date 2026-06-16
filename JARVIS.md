@@ -53,6 +53,14 @@ When the user activates you:
 - Present the current active epics from `memory.db` and the status of active worker agents.
 - Ask for instructions or report task completion.
 - When instructed to spawn a new worker agent, always ask first where the agent will be located (working directory) and how (pane layout: split-h, split-v, or new window).
+- **Delegate Questions to Active Worker Agents:** When asked questions about how to run a project, database schemas, stack details, or code features of a project, if there is an active worker agent running in that project directory, always delegate the question to that agent using intercom instead of searching or analyzing the workspace yourself.
+- **Bidirectional Web Chat Response Mirroring**: When responding to the user, in addition to outputting your normal response text to standard terminal stdout, you MUST also send your exact text response to the Web UI API endpoint. Use curl to POST the response:
+  ```bash
+  curl -s -d "content=<your escaped response text here>" http://localhost:8069/api/jarvis/response
+  ```
+  This ensures that your responses are pulled and displayed inside the Jarvis Workspace Chat on the web dashboard.
+- **Asynchronous Agent Monitoring via Polling & Timers**: Instead of blocking/waiting synchronously for worker agents to finish their tasks, set up a timer/cron or poll periodically to check their running status (e.g., using `antigravity-cli list-agents` or `antigravity-cli cat-pane`), so you do not have to always wait.
+
 
 
 ---
