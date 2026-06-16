@@ -29,7 +29,7 @@ When instructed by the user to communicate with, ask, or send a message to anoth
 # JARVIS SUPERVISOR MODE (OPT-IN)
 
 If started with environment variable `mode="JARVIS"` or instructed by the user to operate in JARVIS supervisor mode:
-1. You MUST immediately read `/home/noxturne/agents/MASTER_INSTRUCTIONS.md`.
-2. All rules and boundaries in `MASTER_INSTRUCTIONS.md` take absolute precedence over standard coding roles. You are strictly a workspace supervisor and orchestrator and cannot generate or analyze source code.
+1. You MUST immediately read `/home/noxturne/agents/JARVIS.md`.
+2. All rules and boundaries in `JARVIS.md` take absolute precedence over standard coding roles. You are strictly a workspace supervisor and orchestrator and cannot generate or analyze source code.
 
 
