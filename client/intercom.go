@@ -51,7 +51,7 @@ func FindAgentPaneByPath(target string) (string, string, error) {
 		paneCmd := parts[3]
 
 		isAgentOpt := isAgent == "1"
-		isAgentCmd := strings.Contains(paneCmd, "agy") || strings.Contains(paneCmd, "gemini") || strings.Contains(paneCmd, "claude")
+		isAgentCmd := strings.Contains(paneCmd, "agy") || strings.Contains(paneCmd, "gemini") || strings.Contains(paneCmd, "claude") || strings.Contains(paneCmd, "opencode")
 
 		if !isAgentOpt && !isAgentCmd {
 			continue
@@ -109,7 +109,7 @@ func ListActiveAgents() ([]AgentInfo, error) {
 		}
 
 		isAgentOpt := isAgent == "1"
-		isAgentCmd := strings.Contains(paneCmd, "agy") || strings.Contains(paneCmd, "gemini") || strings.Contains(paneCmd, "claude")
+		isAgentCmd := strings.Contains(paneCmd, "agy") || strings.Contains(paneCmd, "gemini") || strings.Contains(paneCmd, "claude") || strings.Contains(paneCmd, "opencode")
 
 		if !isAgentOpt && !isAgentCmd {
 			continue
@@ -203,6 +203,7 @@ var PredefinedAgents = []AgentConfig{
 	{Name: "gemini-p1", Command: "mkdir -p ~/.gemini-personal && HOME=$HOME/.gemini-personal gemini"},
 	{Name: "agy-p2", Command: "mkdir -p ~/.antigravity-work && HOME=$HOME/.antigravity-work agy"},
 	{Name: "gemini-p2", Command: "mkdir -p ~/.gemini-work && HOME=$HOME/.gemini-work gemini"},
+	{Name: "opencode", Command: "opencode"},
 }
 
 // SpawnAgentPane executes the tmux split or window commands to spawn a new agent.
@@ -223,10 +224,18 @@ func SpawnAgentPane(agentName, dir, layout, session, planName, prompt string) (s
 	if planName != "" {
 		promptWithPlan := fmt.Sprintf("CRITICAL: You are running on plan '%s'. Read, update, and write to '.agents/plan/active/%s' instead of '.agents/plan/active_plan.md' for all planning operations.\n\nTask: %s", planName, planName, prompt)
 		escapedPrompt := EscapeShellSingleQuote(promptWithPlan)
-		fullShellCmd = fmt.Sprintf("%s -i '%s' ; true # --plan=%s", targetCmd, escapedPrompt, planName)
+		if strings.Contains(agentName, "opencode") {
+			fullShellCmd = fmt.Sprintf("%s --prompt '%s' ; true # --plan=%s", targetCmd, escapedPrompt, planName)
+		} else {
+			fullShellCmd = fmt.Sprintf("%s -i '%s' ; true # --plan=%s", targetCmd, escapedPrompt, planName)
+		}
 	} else {
 		escapedPrompt := EscapeShellSingleQuote(prompt)
-		fullShellCmd = fmt.Sprintf("%s -i '%s'", targetCmd, escapedPrompt)
+		if strings.Contains(agentName, "opencode") {
+			fullShellCmd = fmt.Sprintf("%s --prompt '%s'", targetCmd, escapedPrompt)
+		} else {
+			fullShellCmd = fmt.Sprintf("%s -i '%s'", targetCmd, escapedPrompt)
+		}
 	}
 
 	// Build tmux command argument list
