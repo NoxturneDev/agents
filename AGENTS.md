@@ -26,23 +26,31 @@ Name: Galih Adhi Kusuma
    - **Header/Subject Line:** Maximum 50 characters (not words). Clear, short summary of the specific change.
    - **Body/Description Line:** Separate from the header by a blank line. Must use a concise, compact bulleted list (`-` format) detailing the exact technical changes. Avoid fluffy prose.
 
-## 3. WORKSPACE PERSISTENCE & CONTEXT HANDOFF
+## 3. WORKSPACE PERSISTENCE, PLANNING PROTOCOLS, & CONTEXT HANDOFF
 
 1. **The Source of Truth (`.agents/plan/`):** This directory tracks implementation designs, context states, and architectural feature steps.
-2. **Directory Architecture:**
-   - `.agents/plan/active/{plan_context}.md` -> Always represents the single, current, active feature plan.
+2. **Directory & File Architecture:**
+   - `.agents/plan/active_plan.md` -> Reserved strictly for **Quickfixes, Hotfixes, and Bug Fixes**. When no task is active, it must contain strictly the text `[WAITING FOR TASK]`.
+   - `.agents/plan/active/{plan_context}.md` -> Dedicated files for **Feature Requirements** or user/intercom-requested features. Multiple files may exist here if multiple agents/features are active.
    - `.agents/plan/archive/{date}_{plan_context}.md` -> Stores completed historical plans for review.
    - `.agents/logs/contribution-logs.md` -> Master ledger of completed goals and commits.
-3. **Pre-Flight Context Sync:** On session initialization, you MUST immediately read `.agents/plan/active/` to absorb the full project context before writing code or asking the user for background.
-4. **Pre-Execution Intent Lock (Anti-Crash):** BEFORE making modifications to any codebase files or initiating a subagent generation block, you MUST update `.agents/plan/active_plan.md`. Log the exact sub-task you are about to initiate and flag it as `[IN PROGRESS - AGENT RUNNING]`. This ensures that if the current engine instance crashes mid-process, a newly spawned successor agent can cleanly read the uncommitted git changes and resume execution without loss of state.
+3. **Pre-Flight Context Sync & Scan:** On session initialization, the agent MUST immediately scan the active workspace files to absorb the full project context:
+   - Check if `.agents/plan/active_plan.md` is active (i.e. contains content other than `[WAITING FOR TASK]`).
+   - Scan the `.agents/plan/active/` directory for any active feature plans.
+4. **Pre-Execution Intent Lock (Anti-Crash):** BEFORE making modifications to any codebase files or initiating a subagent generation block, you MUST update the relevant active plan file (either `active_plan.md` or `.agents/plan/active/{plan_context}.md`) that you are working on. Log the exact sub-task you are about to initiate and flag it as `[IN PROGRESS - AGENT RUNNING]`. This ensures that if the current engine instance crashes mid-process, a newly spawned successor agent can cleanly read the plan and resume execution without loss of state.
 5. **Plan Structure Requirements:** Every plan file must contain a complete description of the technical goals and a highly specific task checklist. The very first line MUST be a top-level markdown heading (`#`) stating the primary objective.
 6. **Post-Implementation Checklist Update:** After executing steps or wrapping up a task, you must explicitly log what steps were successfully completed, what went wrong, and exactly how bugs were fixed.
-7. **Archiving & Contribution Logging Routine:** When a plan is 100% complete and the user confirms, you must:
-   - Move the old plan into the `archive/` folder formatted as `{date}_plancontext.md`.
+7. **Archiving & Contribution Logging Routine:** When a plan is 100% complete and the user confirms, you must perform the following cleanup:
    - **Update `.agents/logs/contribution-logs.md`. This file must maintain TWO distinct sections:**
-     - **[MASTER PROGRESS TRACKER]:** A single, high-level bulleted summary at the very top of the file tracking overall project milestones and fully built systems. You must append the newly finished feature here.
+     - **[MASTER PROGRESS TRACKER]:** A single, high-level bulleted summary at the very top of the file tracking overall project milestones and fully built systems. Append the newly finished feature here.
      - **[ROUTINE LOGS]:** A chronological entry appended below the master tracker, detailing exactly what was achieved in this specific plan, including a list of **only the git commit hashes** generated.
-   - **Empty State:** Overwrite `active_plan.md` so that it contains strictly the text `[WAITING FOR TASK]` and nothing else, signaling to the orchestrator that the agent is idle.
+   - **Archive and Cleanup (Strict Scope):**
+     - If you used `.agents/plan/active_plan.md`: Move its content to the archive folder formatted as `.agents/plan/archive/{date}_active_plan.md` and overwrite the file to contain strictly the text `[WAITING FOR TASK]`.
+     - If you used a dedicated `.agents/plan/active/{plan_context}.md` file: Move that specific file to `.agents/plan/archive/{date}_{plan_context}.md`. **Do NOT touch or modify any other active plan files inside the `active/` folder used by other agents.** Only clean up the plan that you specifically ran.
+8. **Obsidian Vault Symlinking (Centralized Command Center):**
+   - For any project workspace, the `plan/` and `logs/` folders inside `.agents/` are symlinked to the central Obsidian Vault at `/mnt/workspace/projects/my-notes/agents/<project-name>/`.
+   - **Selective Symlinking Policy:** Do NOT symlink the root `.agents/` folder itself. Sockets (`antigravity.sock`) and SQLite databases (`memory.db`) must remain local to avoid Syncthing sync conflicts and database lock issues.
+   - Agents write normally to `.agents/plan/...` or `.agents/logs/...`. Because of the symbolic links, these write actions update the Obsidian Vault files directly. The user can review, edit, and approve these plans from Obsidian.
 
 ## 4. PRAGMATIC TECH LEAD REVIEW MODE
 
@@ -124,6 +132,15 @@ When instructed by the user to communicate with, ask, or send a message to anoth
    ```
 3. The target is a substring match of the path where the target agent is running.
 4. Once you call the command, the message will be typed directly into the target agent's terminal input. Since this is an asynchronous cross-agent call, wait for the user to resume you, or check the terminal buffer if needed.
+5. **Mandatory Worker Completion Intercom Update**: When you are a worker agent and have finished executing the active plan (or are waiting for user review of a Commit Plan), you MUST send an update through intercom back to the supervisor agent ONLY if the task/plan was assigned/given to you via intercom from the supervisor:
+   ```bash
+   antigravity-cli send --target=agents --query="I have finished my tasks. Please review the commit plan."
+   ```
+6. **Self-Planning Implementation Details**: When you are spawned or assigned a task with high-level plan goals/objectives, you are expected to detail and plan the specific implementation steps yourself in your active plan before coding.
+7. **Review Mode Protocol**: If instructed that a review is requested (e.g. "I like to review"), you MUST halt execution after outlining your implementation plan, and send the plan back via intercom to the supervisor for approval before writing any code. If not instructed to halt, proceed automatically.
+8. **Intercom Response Mandate**: For every instruction or task given to you via intercom from the supervisor, you MUST send the result/completion update back to the supervisor via intercom upon finishing. If the instruction was typed manually by the user directly in your pane (not sent via intercom from the supervisor), do NOT send any intercom updates back to the supervisor unless explicitly asked by the user.
+
+
 
 ## 9. JARVIS SUPERVISOR MODE (OPT-IN)
 
