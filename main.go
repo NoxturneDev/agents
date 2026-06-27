@@ -76,17 +76,25 @@ func main() {
 		fmt.Printf("Successfully wrote to %s under exclusive lock.\n", filePath)
 
 	case "send":
-		var target, query string
+		var target, query, pane string
 		for _, arg := range args[2:] {
 			if strings.HasPrefix(arg, "--target=") {
 				target = strings.TrimPrefix(arg, "--target=")
 			} else if strings.HasPrefix(arg, "--query=") {
 				query = strings.TrimPrefix(arg, "--query=")
+			} else if strings.HasPrefix(arg, "--pane=") {
+				pane = strings.TrimPrefix(arg, "--pane=")
 			}
 		}
 
+		if target != "" && pane != "" {
+			target = target + ":" + pane
+		} else if target == "" && pane != "" {
+			target = pane
+		}
+
 		if target == "" || query == "" {
-			fmt.Println("Usage: antigravity-cli send --target=<dir> --query=<question>")
+			fmt.Println("Usage: antigravity-cli send --target=<dir> --query=<question> [--pane=<pane_id>]")
 			os.Exit(1)
 		}
 
@@ -124,15 +132,23 @@ func main() {
 		fmt.Println(string(bz))
 
 	case "cat-pane":
-		var target string
+		var target, pane string
 		for _, arg := range args[2:] {
 			if strings.HasPrefix(arg, "--target=") {
 				target = strings.TrimPrefix(arg, "--target=")
+			} else if strings.HasPrefix(arg, "--pane=") {
+				pane = strings.TrimPrefix(arg, "--pane=")
 			}
 		}
 
+		if target != "" && pane != "" {
+			target = target + ":" + pane
+		} else if target == "" && pane != "" {
+			target = pane
+		}
+
 		if target == "" {
-			fmt.Println("Usage: antigravity-cli cat-pane --target=<dir>")
+			fmt.Println("Usage: antigravity-cli cat-pane --target=<dir> [--pane=<pane_id>]")
 			os.Exit(1)
 		}
 

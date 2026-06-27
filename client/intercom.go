@@ -31,10 +31,23 @@ func FindAgentPaneByPath(target string) (string, string, error) {
 	type candidate struct {
 		id   string
 		path string
+		cmd  string
 	}
 	var matches []candidate
 
-	targetLower := strings.ToLower(target)
+	var pathQuery, paneQuery string
+	if strings.Contains(target, ":") {
+		parts := strings.SplitN(target, ":", 2)
+		pathQuery = parts[0]
+		paneQuery = parts[1]
+	} else if strings.HasPrefix(target, "%") {
+		paneQuery = target
+	} else {
+		pathQuery = target
+	}
+
+	pathQueryLower := strings.ToLower(pathQuery)
+	paneQueryLower := strings.ToLower(paneQuery)
 
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
@@ -57,8 +70,20 @@ func FindAgentPaneByPath(target string) (string, string, error) {
 			continue
 		}
 
-		if strings.Contains(strings.ToLower(panePath), targetLower) {
-			matches = append(matches, candidate{id: paneID, path: panePath})
+		match := true
+		if paneQuery != "" {
+			if strings.ToLower(paneID) != paneQueryLower {
+				match = false
+			}
+		}
+		if pathQuery != "" {
+			if !strings.Contains(strings.ToLower(panePath), pathQueryLower) {
+				match = false
+			}
+		}
+
+		if match {
+			matches = append(matches, candidate{id: paneID, path: panePath, cmd: paneCmd})
 		}
 	}
 
@@ -69,7 +94,7 @@ func FindAgentPaneByPath(target string) (string, string, error) {
 	if len(matches) > 1 {
 		var matchedPaths []string
 		for _, m := range matches {
-			matchedPaths = append(matchedPaths, fmt.Sprintf("%s (%s)", m.path, m.id))
+			matchedPaths = append(matchedPaths, fmt.Sprintf("%s (%s, %s)", m.path, m.id, m.cmd))
 		}
 		return "", "", fmt.Errorf("ambiguous target: multiple agent panes match %q:\n  %s", target, strings.Join(matchedPaths, "\n  "))
 	}
@@ -204,6 +229,7 @@ var PredefinedAgents = []AgentConfig{
 	{Name: "agy-p2", Command: "mkdir -p ~/.antigravity-work && HOME=$HOME/.antigravity-work agy"},
 	{Name: "gemini-p2", Command: "mkdir -p ~/.gemini-work && HOME=$HOME/.gemini-work gemini"},
 	{Name: "opencode", Command: "opencode"},
+	{Name: "claude", Command: "claude"},
 }
 
 // SpawnAgentPane executes the tmux split or window commands to spawn a new agent.
