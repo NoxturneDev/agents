@@ -35,25 +35,52 @@ GLOBAL CONTEXT
 
 # CROSS-AGENT INTERCOM COMMUNICATION (OPT-IN)
 
+### Intercom Addressing SOP & Message Format
+To prevent misrouting or blind broadcasting, the following strict intercom addressing SOP must be followed by all agents:
+
+1. **Sender Identification**: Every intercom message sent via `antigravity-cli send` MUST include sender identification at the very beginning of the query in the format:
+   `'[FROM: <project>/<agent-type> pane:<pane_id>]'`
+   *Example*: `antigravity-cli send --pane=%1 --query="[FROM: tmux-ai-orchestrator/agy pane:%2] I have finished my tasks."`
+2. **Targeted Reply Routing**: When replying to an incoming intercom message, agents MUST reply only to the exact pane that sent the message using the `--pane=<pane_id>` flag. Do NOT use blind `--target` broadcast.
+   - Parse the sender `pane_id` from the incoming message header `[FROM: <project>/<agent-type> pane:<pane_id>]`.
+   - Send the reply targeting that specific pane: `antigravity-cli send --pane=<sender_pane_id> --query="..."`
+   - If the sender `pane_id` is unknown or unavailable, reply to the supervisor pane only (`--target=agents`).
+
+### Intercom Commands & Target Selection
 When instructed by the user to communicate with, ask, or send a message to another agent (e.g., "ask the frontend agent...", "send a query to the agent in ziad-react-template..."):
-1. You MUST use shell command execution to run the `antigravity-cli send` tool.
-2. The format is:
+1. You MUST use shell command execution (`run_command`) to run the `antigravity-cli send` tool.
+2. **Discover active agents** first:
    ```bash
-   antigravity-cli send --target=<target_directory_substring> --query="<your query>"
+   antigravity-cli list-agents
    ```
-   For example, if target is ziad-react-template:
+   This returns JSON with all running agent panes: `{pane_id, path, command}`.
+3. **Target Selection Rule**: Always prefer targeting by pane ID using `--pane=<pane_id>` to ensure exact delivery, especially when multiple agents share the same path.
+4. **Target by path substring** (matches agent by working directory):
    ```bash
-   antigravity-cli send --target=ziad-react-template --query="What is the JSON structure for the login payload?"
+   antigravity-cli send --target=<target_directory_substring> --query="[FROM: <project>/<agent-type> pane:<pane_id>] <your query>"
    ```
-3. The target is a substring match of the path where the target agent is running.
-4. Once you call the command, the message will be typed directly into the target agent's terminal input. Since this is an asynchronous cross-agent call, wait for the user to resume you, or check the terminal buffer if needed.
-5. **Mandatory Worker Completion Intercom Update**: When you are a worker agent and have finished executing the active plan (or are waiting for user review of a Commit Plan), you MUST send an update through intercom back to the supervisor agent ONLY if the task/plan was assigned/given to you via intercom from the supervisor:
+   *Example*:
    ```bash
-   antigravity-cli send --target=agents --query="I have finished my tasks. Please review the commit plan."
+   antigravity-cli send --target=ziad-react-template --query="[FROM: tmux-ai-orchestrator/agy pane:%2] What is the JSON structure for the login payload?"
    ```
-6. **Self-Planning Implementation Details**: When you are spawned or assigned a task with high-level plan goals/objectives, you are expected to detail and plan the specific implementation steps yourself in your active plan before coding.
-7. **Review Mode Protocol**: If instructed that a review is requested (e.g. "I like to review"), you MUST halt execution after outlining your implementation plan, and send the plan back via intercom to the supervisor for approval before writing any code. If not instructed to halt, proceed automatically.
-8. **Intercom Response Mandate**: For every instruction or task given to you via intercom from the supervisor, you MUST send the result/completion update back to the supervisor via intercom upon finishing. If the instruction was typed manually by the user directly in your pane (not sent via intercom from the supervisor), do NOT send any intercom updates back to the supervisor unless explicitly asked by the user.
+5. **Target by pane ID**:
+   ```bash
+   antigravity-cli send --pane=<pane_id> --query="[FROM: <project>/<agent-type> pane:<pane_id>] <your query>"
+   ```
+   *Example*:
+   ```bash
+   antigravity-cli send --pane=%25 --query="[FROM: tmux-ai-orchestrator/agy pane:%2] What is the current schema?"
+   ```
+6. The target is a substring match of the path where the target agent is running.
+7. **Supported agent types**: `opencode`, `agy` (antigravity), `claude` — all detected automatically via tmux pane process scanning.
+8. Once you call the command, the message will be typed directly into the target agent's terminal input. Since this is an asynchronous cross-agent call, wait for the user to resume you, or check the terminal buffer if needed.
+9. **Mandatory Worker Completion Intercom Update**: When you are a worker agent and have finished executing the active plan (or are waiting for user review of a Commit Plan), you MUST send an update through intercom back to the supervisor agent ONLY if the task/plan was assigned/given to you via intercom from the supervisor. You must use the sender's pane ID from the original assignment if available, or fall back to `--target=agents` if the pane ID is not known:
+   ```bash
+   antigravity-cli send --target=agents --query="[FROM: tmux-ai-orchestrator/agy pane:%2] I have finished my tasks. Please review the commit plan."
+   ```
+10. **Self-Planning Implementation Details**: When you are spawned or assigned a task with high-level plan goals/objectives, you are expected to detail and plan the specific implementation steps yourself in your active plan before coding.
+11. **Review Mode Protocol**: If instructed that a review is requested (e.g. "I like to review"), you MUST halt execution after outlining your implementation plan, and send the plan back via intercom to the supervisor for approval before writing any code. If not instructed to halt, proceed automatically.
+12. **Intercom Response Mandate**: For every instruction or task given to you via intercom from the supervisor, you MUST send the result/completion update back to the supervisor via intercom upon finishing. If the instruction was typed manually by the user directly in your pane (not sent via intercom from the supervisor), do NOT send any intercom updates back to the supervisor unless explicitly asked by the user.
 
 
 
