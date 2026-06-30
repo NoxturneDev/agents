@@ -352,3 +352,33 @@ When the user types **"BYPASS"** at the start of a prompt (e.g., "BYPASS: fix th
 BYPASS: <exact instruction>
 ```
 
+
+## 11. ENGINEERING CODE OF CONDUCT (MANDATORY · ALL AGENTS)
+
+The language-agnostic rules for the **craft** of code — how every agent writes,
+modifies, and verifies code in any language — live in a dedicated file to keep
+this document lean:
+
+> **→ [`CODE.md`](CODE.md)** — the canonical Engineering Code of Conduct.
+
+1. **Mandatory reading:** Every agent (Claude, `agy`, `gemini`, `opencode`, and
+   any worker) MUST read `CODE.md` at the start of a session before touching
+   code. It is not optional.
+2. **Mandatory practice:** Every implementation, bug fix, or refactor MUST comply
+   with the 16 rules in `CODE.md` (recon-first pattern-matching, naming,
+   comments, pragmatic abstraction & error handling, scope discipline, hygiene,
+   build verification, formatting, dependency restraint, security, performance,
+   asking on ambiguity, and honest reporting).
+3. **Portable skill:** The same conduct is published as a cross-CLI Agent Skill
+   at [`skills/engineering-conduct/SKILL.md`](skills/engineering-conduct/SKILL.md)
+   (standard [agentskills.io](https://agentskills.io) format). Skills-aware
+   agents MUST load and apply the `engineering-conduct` skill on every coding
+   task. Install it into another agentic CLI from this repo with:
+   ```bash
+   npx skills add ./skills/engineering-conduct
+   ```
+4. **Precedence:** `CODE.md` governs code craft only; it is subordinate to the
+   workflow, git, and orchestration rules above, and to explicit user
+   instructions. `CODE.md` is canonical — when editing the conduct, update the
+   skill mirror to match.
+
