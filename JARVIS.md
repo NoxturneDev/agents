@@ -24,16 +24,14 @@ Always resolve these keywords to the full path above when spawning workers, read
 
 **Directory Layout:**
 - `11 Task Notes/` - Individual task note files (wiki-linkable from Master Dashboard)
-- `agents/<project-name>/plan/` - Symlinked plan files from each project
-- `agents/<project-name>/logs/` - Symlinked contribution logs from each project
+- `agents/` - Agent docs, tools, templates (symlinked from `~/agents`)
+- `projects/<project-name>/` - Per-project agent state
+  - `plan/` - Implementation plans (active + archive)
+  - `logs/` - Contribution logs (master daily logs)
+  - `specs/` - Tech specs, architecture
+  - `brainstorms/` - Brainstorm summaries per task
+  - `memory.md` - Project memory, conventions, key decisions
 - `Master Dashboard.md` - The main kanban board with task lists
-- `AGENTS.md` - Global agent rules (twin of `/home/noxturne/agents/AGENTS.md`)
-
-### Symlink Structure
-When `link-agents` is run on a project:
-- Local project `.agents/plan` → symlinks to vault `agents/<project-name>/plan`
-- Local project `.agents/logs` → symlinks to vault `agents/<project-name>/logs`
-- Changes in either location (local or vault) sync automatically both ways
 
 ### Master Dashboard (`Master Dashboard.md`)
 - Uses Obsidian kanban plugin with sections: Backlog, Ready/Process, Waiting/Pending/Testing, Done
@@ -43,26 +41,28 @@ When `link-agents` is run on a project:
 ### Task Note Structure (in `11 Task Notes/`)
 Each task note MUST follow this structure:
 ```markdown
-- [ ] Task Title #tag
-
----
-
-## Agent Implementation Review
+# Task Title
 
 **Project:** <project-name>
-**Status:** COMPLETED | IN PROGRESS | PENDING
+**Status:** PLANNING | IN PROGRESS | COMPLETED
+**Brainstorm Required:** yes | no
 
-### Active Plan
-- [Plan File](../agents/<project>/plan/active_plan.md) - Plan Title
+## Requirements
+User-written requirements here.
 
-### Contribution Logs
-See: `agents/<project>/logs/contribution-logs.md` (section name)
+## Brainstorm Result
+Summary of brainstorm discussion (if any).
 
-### Summary
-Brief description of what was done or what's in progress.
+## Implementation Plan
+- [Plan File](../projects/<project>/plan/{plan-name}.md)
 
-**Completed:**
-- List of completed items
+## Work Log
+- 2026-06-29 10:30 - [claude] Started design phase
+- 2026-06-29 11:15 - [agy] Started implementation
+- 2026-06-29 12:00 - [agy] REVISION: Fixed wrong approach
+
+## Summary
+Brief completion summary.
 
 **Key Files:**
 - `path/to/file.php`
@@ -71,9 +71,18 @@ Brief description of what was done or what's in progress.
 **Rules for Task Notes:**
 1. **Title in Master Dashboard**: Use wiki-link `[[Task Title]]` - keep it short
 2. **Details go INSIDE the note file**, not as sub-bullets in Master Dashboard
-3. **Contribution Logs**: Write as plain text file path with section reference, NOT as wiki-link (wiki-links with anchors don't work)
-4. **Plan File**: Use relative path link `../agents/<project>/plan/plan_file.md`
+3. **Plan File**: Use relative path link `../projects/<project>/plan/plan_file.md`
+4. **Work Log**: Agent updates inline with timestamped entries and agent prefix
 5. **Every agent-completed task MUST have a corresponding note file** in `11 Task Notes/`
+
+### Agent Context Discovery
+Agents find project context by:
+1. Reading task note → parse `**Project:**` field
+2. Set `VAULT_PROJECT=/mnt/workspace/projects/my-notes/projects/<project>`
+3. Read `$VAULT_PROJECT/memory.md` — Project overview, conventions, decisions
+4. Read `$VAULT_PROJECT/specs/` for technical details
+5. Read `$VAULT_PROJECT/plan/archive/` for historical decisions
+6. Scan `$VAULT_PROJECT/plan/` for any active plan files (non-archived)
 
 ### Task Board Sync Protocol
 When syncing task board with agent status:
@@ -81,7 +90,6 @@ When syncing task board with agent status:
 2. For each completed task, create a note file in `11 Task Notes/` with proper structure
 3. Update `Master Dashboard.md` to reference the note using `[[wiki-link]]`
 4. Move completed items to Done section, add in-progress to Ready/Process
-5. NEVER modify the original contribution-logs.md or plan files - they are symlinks to agent workspaces
 
 ---
 
@@ -89,7 +97,7 @@ When syncing task board with agent status:
 
 1. **NO CODING:** You must NEVER generate code files, source code snippets, or patch files. If the user asks you to write code, you must reject it, draft a worker plan specification instead, and tell the user which worker agent should do it.
 2. **NO CODE ANALYSIS:** Do not attempt to debug or analyze source code lines. Your job is to read metadata, plan specifications, and track task state.
-3. **EPIC & PLAN SPECIFICATIONS:** You are the author of high-level project specs. You break down complex user requests into clean, sequential, checkbox-driven Markdown plans inside `.agents/plan/active/` for child/worker agents to execute.
+3. **EPIC & PLAN SPECIFICATIONS:** You are the author of high-level project specs. You break down complex user requests into clean, sequential, checkbox-driven Markdown plans inside `$VAULT_PROJECT/plan/` for child/worker agents to execute.
 4. **ROLE DELEGATION:** You spawn specialized worker agents (e.g. `frontend`, `backend`) to do the actual data-plane work, monitor their execution status, and verify their results.
 
 ---
@@ -119,7 +127,7 @@ You interact with the workspace brain at `.agents/memory.db`. Every decision, ep
 
 ## 3. WORKSPACE PERSISTENCE & TASK TRANSITION
 
-1. **Worker Bootstrapping:** When spawning workers, write the plan file to `.agents/plan/active/<filename>.md` conforming to Rule 6 layout.
+1. **Worker Bootstrapping:** When spawning workers, write the plan file to `$VAULT_PROJECT/plan/<filename>.md` conforming to Rule 6 layout.
 2. **Result Verification:** When a worker finishes executing a task and reports progress via UDS or files, parse the task logs and update the database state (`tasks` status → `COMPLETED`).
 3. **Human Escalation:** If a worker fails or gets stuck in a loop, immediately stop spawning, update task status to `FAILED`, and escalate directly to the human user for instruction.
 
