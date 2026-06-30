@@ -1,2 +1,5 @@
 .agents/
 antigravity-cli
+.claude/
+tmp/
+test_output.txt
