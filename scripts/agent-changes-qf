@@ -1,0 +1,30 @@
+#!/bin/bash
+# List changed files from current repo into quickfix format
+# Usage: agent-changes-qf [directory]
+# If no directory given, uses current working directory
+
+DIR="${1:-.}"
+DIR="$(cd "$DIR" && pwd)"
+OUTPUT="/tmp/agent-changes.qf"
+
+GIT_ROOT=$(git -C "$DIR" rev-parse --show-toplevel 2>/dev/null)
+if [ -z "$GIT_ROOT" ]; then
+  echo "Not a git repository: $DIR"
+  exit 1
+fi
+
+REPO_NAME=$(basename "$GIT_ROOT")
+> "$OUTPUT"
+
+# Get all changed files (staged + unstaged + untracked)
+{
+  git -C "$GIT_ROOT" diff --no-color --name-only 2>/dev/null
+  git -C "$GIT_ROOT" diff --no-color --name-only --cached 2>/dev/null
+  git -C "$GIT_ROOT" ls-files --others --exclude-standard 2>/dev/null
+} | sort -u | while read -r FILE; do
+  FULL_PATH="$GIT_ROOT/$FILE"
+  echo "$FULL_PATH:1:[$REPO_NAME] $FILE" >> "$OUTPUT"
+done
+
+ENTRIES=$(wc -l < "$OUTPUT")
+echo "Wrote $ENTRIES entries to $OUTPUT (repo: $REPO_NAME)"

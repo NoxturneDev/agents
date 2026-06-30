@@ -1,0 +1,10 @@
+#!/bin/bash
+
+SESSION_NAME="tmux-ai-dashboard"
+
+if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
+    tmux kill-session -t "$SESSION_NAME"
+    echo "Stopped tmux-ai-dashboard"
+else
+    echo "Session $SESSION_NAME not running"
+fi

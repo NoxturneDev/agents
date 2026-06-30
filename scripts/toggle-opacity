@@ -1,0 +1,11 @@
+#!/bin/bash
+# Toggle kitty background opacity between transparent and opaque
+
+CURRENT=$(kitty @ get-background-opacity 2>/dev/null)
+INT=$(echo "$CURRENT" | awk '{printf "%d", $1 * 100}')
+
+if [ "$INT" -le 50 ]; then
+  kitty @ set-background-opacity 1.0
+else
+  kitty @ set-background-opacity 0.3
+fi

@@ -1,0 +1,11 @@
+#!/bin/bash
+# Open lazygit diff in tmux scratch pad with neovim
+
+FILE="$1"
+LINE="$2"
+
+if [ -n "$LINE" ]; then
+  tmux run-shell "tmux popup -E -w 80% -h 80% 'nvim +$LINE -d $FILE'"
+else
+  tmux run-shell "tmux popup -E -w 80% -h 80% 'nvim -d $FILE'"
+fi

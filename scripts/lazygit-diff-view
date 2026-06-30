@@ -1,0 +1,16 @@
+#!/bin/bash
+# Open lazygit diff in neovim via tmux popup
+# Usage: lazygit-diff-view [file] or pipe diff to stdin
+
+FILE="$1"
+
+if [ -n "$FILE" ]; then
+  # If a file argument is provided, diff it
+  git diff "$FILE" > /tmp/lazygit-diff-$$
+else
+  # Otherwise read from stdin
+  cat > /tmp/lazygit-diff-$$
+fi
+
+tmux run-shell "tmux popup -E -w 80% -h 80% 'nvim -R /tmp/lazygit-diff-$$'"
+rm -f /tmp/lazygit-diff-$$

@@ -1,0 +1,26 @@
+#!/bin/bash
+set -e
+
+SESSION_NAME="tmux-ai-dashboard"
+PROJECT_DIR="/mnt/workspace/projects/tmux-ai-orchestrator"
+
+# Check if session already exists
+if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
+    echo "Session $SESSION_NAME already running"
+    exit 0
+fi
+
+# Create detached tmux session
+tmux new-session -d -s "$SESSION_NAME" -c "$PROJECT_DIR" \
+    "./run_dashboard.sh"
+
+echo "Started tmux-ai-dashboard in tmux session: $SESSION_NAME"
+echo "Web server starting on http://localhost:8069"
+
+# Keep script alive so systemd tracks the service
+while tmux has-session -t "$SESSION_NAME" 2>/dev/null; do
+    sleep 10
+done
+
+echo "Session ended"
+exit 0

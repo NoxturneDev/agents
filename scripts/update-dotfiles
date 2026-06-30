@@ -1,0 +1,68 @@
+#!/bin/bash
+# Update ~/dotfiles/arch with current system configs
+# Usage: update-dotfiles
+
+set -e
+
+DOTFILES="$HOME/dotfiles/arch"
+
+echo "Updating dotfiles from system configs..."
+
+# Neovim
+echo "  → neovim"
+rm -rf "$DOTFILES/nvim"
+cp -r "$HOME/.config/nvim" "$DOTFILES/nvim"
+rm -rf "$DOTFILES/nvim/.git" "$DOTFILES/nvim/undo" "$DOTFILES/nvim/shada"
+
+# Hyprland
+echo "  → hyprland"
+rm -rf "$DOTFILES/hypr"
+mkdir -p "$DOTFILES/hypr"
+cp "$HOME/.config/hypr/hyprland.conf" "$DOTFILES/hypr/" 2>/dev/null || true
+cp "$HOME/.config/hypr/hypridle.conf" "$DOTFILES/hypr/" 2>/dev/null || true
+cp "$HOME/.config/hypr/hyprlock.conf" "$DOTFILES/hypr/" 2>/dev/null || true
+cp "$HOME/.config/hypr/hyprpaper.conf" "$DOTFILES/hypr/" 2>/dev/null || true
+cp -r "$HOME/.config/hypr/configs" "$DOTFILES/hypr/" 2>/dev/null || true
+cp -r "$HOME/.config/hypr/scripts" "$DOTFILES/hypr/" 2>/dev/null || true
+
+# Waybar
+echo "  → waybar"
+rm -rf "$DOTFILES/waybar"
+mkdir -p "$DOTFILES/waybar"
+cp "$HOME/.config/waybar/config.jsonc" "$DOTFILES/waybar/" 2>/dev/null || true
+cp "$HOME/.config/waybar/style.css" "$DOTFILES/waybar/" 2>/dev/null || true
+cp -r "$HOME/.config/waybar/css" "$DOTFILES/waybar/" 2>/dev/null || true
+cp -r "$HOME/.config/waybar/layouts" "$DOTFILES/waybar/" 2>/dev/null || true
+cp "$HOME/.config/waybar/modules.jsonc" "$DOTFILES/waybar/" 2>/dev/null || true
+
+# Kitty
+echo "  → kitty"
+rm -rf "$DOTFILES/kitty"
+mkdir -p "$DOTFILES/kitty"
+cp "$HOME/.config/kitty/kitty.conf" "$DOTFILES/kitty/" 2>/dev/null || true
+cp "$HOME/.config/kitty/"*.conf "$DOTFILES/kitty/" 2>/dev/null || true
+
+# Lazygit
+echo "  → lazygit"
+rm -rf "$DOTFILES/lazygit"
+mkdir -p "$DOTFILES/lazygit"
+cp "$HOME/.config/lazygit/config.yml" "$DOTFILES/lazygit/" 2>/dev/null || true
+
+# Wofi
+echo "  → wofi"
+rm -rf "$DOTFILES/wofi"
+cp -r "$HOME/.config/wofi" "$DOTFILES/" 2>/dev/null || true
+
+# Root configs
+echo "  → tmux.conf"
+cp "$HOME/.tmux.conf" "$DOTFILES/tmux.conf"
+
+echo "  → zshrc"
+cp "$HOME/.zshrc" "$DOTFILES/zshrc"
+
+echo "  → zprofile"
+cp "$HOME/.zprofile" "$DOTFILES/zprofile" 2>/dev/null || true
+
+echo ""
+echo "Done! Dotfiles updated at $DOTFILES"
+echo "cd ~/dotfiles && git add . && git commit -m 'sync: update arch configs'"
