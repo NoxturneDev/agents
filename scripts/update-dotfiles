@@ -63,6 +63,12 @@ cp "$HOME/.zshrc" "$DOTFILES/zshrc"
 echo "  → zprofile"
 cp "$HOME/.zprofile" "$DOTFILES/zprofile" 2>/dev/null || true
 
+# Local bin tools
+echo "  → .local/bin"
+mkdir -p "$DOTFILES/.local/bin"
+cp "$HOME/.local/bin/vault-init" "$DOTFILES/.local/bin/" 2>/dev/null || true
+cp "$HOME/.local/bin/obsidian-cli" "$DOTFILES/.local/bin/" 2>/dev/null || true
+
 echo ""
 echo "Done! Dotfiles updated at $DOTFILES"
 echo "cd ~/dotfiles && git add . && git commit -m 'sync: update arch configs'"

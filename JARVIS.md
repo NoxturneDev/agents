@@ -41,11 +41,15 @@ Always resolve these keywords to the full path above when spawning workers, read
 ### Task Note Structure (in `11 Task Notes/`)
 Each task note MUST follow this structure:
 ```markdown
-# Task Title
+---
+id: T-XXX
+project: <project-name>
+status: PLANNING | IN PROGRESS | COMPLETED
+brainstorm_required: false
+created: YYYY-MM-DD
+---
 
-**Project:** <project-name>
-**Status:** PLANNING | IN PROGRESS | COMPLETED
-**Brainstorm Required:** yes | no
+# Task Title
 
 ## Requirements
 User-written requirements here.
@@ -77,12 +81,21 @@ Brief completion summary.
 
 ### Agent Context Discovery
 Agents find project context by:
-1. Reading task note → parse `**Project:**` field
-2. Set `VAULT_PROJECT=/mnt/workspace/projects/my-notes/projects/<project>`
-3. Read `$VAULT_PROJECT/memory.md` — Project overview, conventions, decisions
-4. Read `$VAULT_PROJECT/specs/` for technical details
-5. Read `$VAULT_PROJECT/plan/archive/` for historical decisions
-6. Scan `$VAULT_PROJECT/plan/` for any active plan files (non-archived)
+1. Reading task note → parse `id` field from YAML frontmatter (e.g., `T-042`)
+2. Parse `project` field to determine vault path
+3. Set `VAULT_PROJECT=/mnt/workspace/projects/my-notes/projects/<project>`
+4. Read `$VAULT_PROJECT/memory.md` — Project overview, conventions, decisions
+5. Read `$VAULT_PROJECT/specs/` for technical details
+6. Read `$VAULT_PROJECT/plan/archive/` for historical decisions
+7. Scan `$VAULT_PROJECT/plan/` for any active plan files (non-archived)
+
+**Use `obsidian-cli` for vault operations** instead of `grep`/`ls`:
+```bash
+obsidian-cli read file="Task Note Name"
+obsidian-cli search query="payment" path="projects/ziad-core-backend"
+obsidian-cli files folder="11 Task Notes"
+```
+See `agents/tools/obsidian-cli.md` for full reference.
 
 ### Task Board Sync Protocol
 When syncing task board with agent status:

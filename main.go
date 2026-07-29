@@ -9,6 +9,7 @@ import (
 
 	"antigravity/client"
 	"antigravity/daemon"
+	"antigravity/review"
 )
 
 func main() {
@@ -34,6 +35,9 @@ func main() {
 
 	subcommand := args[1]
 	switch subcommand {
+	case "review":
+		review.Create(args[2:])
+
 	case "daemon":
 		workspaceRoot, err := client.FindWorkspaceRoot()
 		if err != nil {
@@ -217,6 +221,7 @@ func extractPlanFlag() (string, []string) {
 func printUsage() {
 	fmt.Println("Antigravity UDS Lock Daemon CLI")
 	fmt.Println("Usage:")
+	fmt.Println("  antigravity-cli review create --slug=<slug> --title=<title> [--project=<project>] [--base=<base>] [--summary-file=<file>] [--plan-file=<markdown>]")
 	fmt.Println("  antigravity-cli daemon                  - Run the gRPC lock daemon server")
 	fmt.Println("  antigravity-cli ping                    - Query lock daemon health status")
 	fmt.Println("  antigravity-cli write <file> <content>  - Write file safely using lock manager client")
